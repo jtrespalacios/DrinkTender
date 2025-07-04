@@ -8,32 +8,50 @@
 import SwiftUI
 import WidgetKit
 import ClockKit
+import UserNotifications
 
 // MARK: - Data Model
 class DrinkTimerModel: ObservableObject {
     @Published var lastDrinkTime: Date?
     @Published var delayMinutes: Int = 60 // Default 1 hour delay
     @Published var canDrink: Bool = true
+    @Published var notificationsEnabled: Bool = true
+    @Published var drinkCount: Int = 0
 
     private let userDefaults = UserDefaults.standard
     private let lastDrinkKey = "lastDrinkTime"
     private let delayKey = "delayMinutes"
+    private let notificationsKey = "notificationsEnabled"
+    private let drinkCountKey = "drinkCount"
+    private let notificationIdentifier = "DrinkTimerNotification"
 
     init() {
         loadData()
         updateCanDrinkStatus()
+        requestNotificationPermission()
     }
 
     func recordDrink() {
         lastDrinkTime = Date()
         canDrink = false
+        drinkCount += 1
         saveData()
         scheduleComplicationUpdate()
+        
+        // Schedule notification for when next drink is available
+        if notificationsEnabled {
+            scheduleNotification()
+        }
 
         // Schedule next drink availability
         DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(delayMinutes * 60)) {
             self.updateCanDrinkStatus()
         }
+    }
+    
+    func resetDrinkCount() {
+        drinkCount = 0
+        saveData()
     }
 
     func updateCanDrinkStatus() {
@@ -77,6 +95,8 @@ class DrinkTimerModel: ObservableObject {
             userDefaults.set(lastDrink, forKey: lastDrinkKey)
         }
         userDefaults.set(delayMinutes, forKey: delayKey)
+        userDefaults.set(notificationsEnabled, forKey: notificationsKey)
+        userDefaults.set(drinkCount, forKey: drinkCountKey)
     }
 
     private func loadData() {
@@ -85,6 +105,14 @@ class DrinkTimerModel: ObservableObject {
         }
         delayMinutes = userDefaults.integer(forKey: delayKey)
         if delayMinutes == 0 { delayMinutes = 60 } // Default fallback
+        
+        notificationsEnabled = userDefaults.bool(forKey: notificationsKey)
+        // Default to true if not set
+        if userDefaults.object(forKey: notificationsKey) == nil {
+            notificationsEnabled = true
+        }
+        
+        drinkCount = userDefaults.integer(forKey: drinkCountKey)
     }
 
     private func scheduleComplicationUpdate() {
@@ -93,12 +121,67 @@ class DrinkTimerModel: ObservableObject {
             server.reloadTimeline(for: complication)
         }
     }
+    
+    // MARK: - Notification Methods
+    
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            DispatchQueue.main.async {
+                self.notificationsEnabled = granted
+                self.saveData()
+            }
+            
+            if let error = error {
+                print("Notification permission error: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    private func scheduleNotification() {
+        // Cancel any existing notifications
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationIdentifier])
+        
+        guard let lastDrink = lastDrinkTime else { return }
+        
+        let nextDrinkTime = lastDrink.addingTimeInterval(TimeInterval(delayMinutes * 60))
+        let timeInterval = nextDrinkTime.timeIntervalSinceNow
+        
+        // Only schedule if the time is in the future
+        guard timeInterval > 0 else { return }
+        
+        let content = UNMutableNotificationContent()
+        content.title = "Drink Timer"
+        content.body = "Ready for your next drink! 🥤"
+        content.sound = .default
+        
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: timeInterval, repeats: false)
+        let request = UNNotificationRequest(identifier: notificationIdentifier, content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Failed to schedule notification: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    func toggleNotifications() {
+        if notificationsEnabled {
+            // Disable notifications
+            notificationsEnabled = false
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationIdentifier])
+        } else {
+            // Request permission and enable
+            requestNotificationPermission()
+        }
+        saveData()
+    }
 }
 
 // MARK: - Content View
 struct ContentView: View {
     @EnvironmentObject var drinkTimer: DrinkTimerModel
     @State private var currentPage = 0
+    @State private var showingConfirmation = false
     
     private let delayOptions = [15, 30, 45, 60, 90, 120, 180, 240] // Minutes
     
@@ -152,6 +235,9 @@ struct ContentView: View {
                     Button(action: {
                         if drinkTimer.canDrink {
                             drinkTimer.recordDrink()
+                        } else {
+                            // Show confirmation dialog when timer is running
+                            showingConfirmation = true
                         }
                     }) {
                         ZStack {
@@ -181,6 +267,14 @@ struct ContentView: View {
                 Spacer()
             }
         }
+        .alert("Record Another Drink?", isPresented: $showingConfirmation) {
+            Button("Yes") {
+                drinkTimer.recordDrink()
+            }
+            Button("No", role: .cancel) { }
+        } message: {
+            Text("This will reset your timer and count another drink.")
+        }
     }
     
     @ViewBuilder
@@ -198,6 +292,19 @@ struct ContentView: View {
                 
                 // Settings Content
                 List {
+                    Section("Notifications") {
+                        HStack {
+                            Text("Alert when ready")
+                                .foregroundColor(.white)
+                            Spacer()
+                            Toggle("", isOn: $drinkTimer.notificationsEnabled)
+                                .onChange(of: drinkTimer.notificationsEnabled) { _ in
+                                    drinkTimer.toggleNotifications()
+                                }
+                        }
+                    }
+                    .listRowBackground(Color.gray.opacity(0.2))
+                    
                     Section("Delay Between Drinks") {
                         ForEach(delayOptions, id: \.self) { minutes in
                             HStack {
@@ -218,6 +325,15 @@ struct ContentView: View {
                     .listRowBackground(Color.gray.opacity(0.2))
 
                     Section("Current Status") {
+                        HStack {
+                            Text("Today's Drinks:")
+                                .foregroundColor(.white)
+                            Spacer()
+                            Text("\(drinkTimer.drinkCount)")
+                                .foregroundColor(.blue)
+                                .fontWeight(.semibold)
+                        }
+                        
                         if let lastDrink = drinkTimer.lastDrinkTime {
                             HStack {
                                 Text("Last Drink:")
@@ -242,8 +358,15 @@ struct ContentView: View {
                         Button("Reset Timer") {
                             drinkTimer.lastDrinkTime = nil
                             drinkTimer.canDrink = true
+                            // Cancel any pending notifications
+                            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["DrinkTimerNotification"])
                         }
                         .foregroundColor(.red)
+                        
+                        Button("Reset Drink Count") {
+                            drinkTimer.resetDrinkCount()
+                        }
+                        .foregroundColor(.orange)
                     }
                     .listRowBackground(Color.gray.opacity(0.2))
                 }
