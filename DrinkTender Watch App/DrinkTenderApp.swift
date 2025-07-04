@@ -8,10 +8,13 @@
 import SwiftUI
 
 @main
-struct DrinkTender_Watch_AppApp: App {
+struct DrinkTimerApp: App {
+    @StateObject private var drinkTimer = DrinkTimerModel()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(drinkTimer)
         }
     }
 }
