@@ -7,7 +7,6 @@
 
 import SwiftUI
 import WidgetKit
-import ClockKit
 import UserNotifications
 
 // MARK: - Data Model
@@ -116,10 +115,7 @@ class DrinkTimerModel: ObservableObject {
     }
 
     private func scheduleComplicationUpdate() {
-        let server = CLKComplicationServer.sharedInstance()
-        server.activeComplications?.forEach { complication in
-            server.reloadTimeline(for: complication)
-        }
+        WidgetCenter.shared.reloadAllTimelines()
     }
     
     // MARK: - Notification Methods
@@ -197,7 +193,7 @@ struct ContentView: View {
                 settingsScreen()
                     .tag(1)
             }
-            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
         }
         .onAppear {
             drinkTimer.updateCanDrinkStatus()
@@ -420,139 +416,6 @@ struct ContentView: View {
             } else {
                 return "\(hours)h \(remainingMinutes)m"
             }
-        }
-    }
-}
-
-// MARK: - Complication Provider
-class ComplicationController: NSObject, CLKComplicationDataSource {
-
-    private var drinkTimer: DrinkTimerModel {
-        // In a real app, you'd want to share this instance properly
-        return DrinkTimerModel()
-    }
-
-    // MARK: - Complication Configuration
-
-    func getComplicationDescriptors(handler: @escaping ([CLKComplicationDescriptor]) -> Void) {
-        let descriptors = [
-            CLKComplicationDescriptor(identifier: "DrinkTimer", displayName: "Drink Timer", supportedFamilies: [
-                .modularSmall,
-                .modularLarge,
-                .utilitarianSmall,
-                .utilitarianLarge,
-                .circularSmall,
-                .extraLarge,
-                .graphicCorner,
-                .graphicBezel,
-                .graphicCircular,
-                .graphicRectangular
-            ])
-        ]
-        handler(descriptors)
-    }
-
-    func handleSharedComplicationDescriptors(_ complicationDescriptors: [CLKComplicationDescriptor]) {
-        // Handle shared complications if needed
-    }
-
-    // MARK: - Timeline Configuration
-
-    func getTimelineEndDate(for complication: CLKComplication, withHandler handler: @escaping (Date?) -> Void) {
-        guard let lastDrink = drinkTimer.lastDrinkTime else {
-            handler(nil)
-            return
-        }
-
-        let endDate = lastDrink.addingTimeInterval(TimeInterval(drinkTimer.delayMinutes * 60))
-        handler(endDate)
-    }
-
-    func getPrivacyBehavior(for complication: CLKComplication, withHandler handler: @escaping (CLKComplicationPrivacyBehavior) -> Void) {
-        handler(.showOnLockScreen)
-    }
-
-    // MARK: - Timeline Population
-
-    func getCurrentTimelineEntry(for complication: CLKComplication, withHandler handler: @escaping (CLKComplicationTimelineEntry?) -> Void) {
-        let template = createTemplate(for: complication.family)
-        let entry = CLKComplicationTimelineEntry(date: Date(), complicationTemplate: template)
-        handler(entry)
-    }
-
-    func getTimelineEntries(for complication: CLKComplication, after date: Date, limit: Int, withHandler handler: @escaping ([CLKComplicationTimelineEntry]?) -> Void) {
-        var entries: [CLKComplicationTimelineEntry] = []
-
-        if let lastDrink = drinkTimer.lastDrinkTime, !drinkTimer.canDrink {
-            let nextAvailableTime = lastDrink.addingTimeInterval(TimeInterval(drinkTimer.delayMinutes * 60))
-
-            if nextAvailableTime > date {
-                let template = createTemplate(for: complication.family, isAvailable: true)
-                let entry = CLKComplicationTimelineEntry(date: nextAvailableTime, complicationTemplate: template)
-                entries.append(entry)
-            }
-        }
-
-        handler(entries)
-    }
-
-    // MARK: - Sample Templates
-
-    func getLocalizableSampleTemplate(for complication: CLKComplication, withHandler handler: @escaping (CLKComplicationTemplate?) -> Void) {
-        let template = createTemplate(for: complication.family)
-        handler(template)
-    }
-
-    // MARK: - Template Creation
-
-    private func createTemplate(for family: CLKComplicationFamily, isAvailable: Bool? = nil) -> CLKComplicationTemplate {
-        let available = isAvailable ?? drinkTimer.canDrink
-        let timeText = available ? "Ready" : drinkTimer.formattedTimeUntilNext()
-        let color: UIColor = available ? .green : .red
-
-        switch family {
-        case .modularSmall:
-            let template = CLKComplicationTemplateModularSmallSimpleText()
-            template.textProvider = CLKSimpleTextProvider(text: timeText)
-            template.tintColor = color
-            return template
-
-        case .modularLarge:
-            let template = CLKComplicationTemplateModularLargeStandardBody()
-            template.headerTextProvider = CLKSimpleTextProvider(text: "Drink Timer")
-            template.body1TextProvider = CLKSimpleTextProvider(text: available ? "Ready for next drink" : "Wait: \(timeText)")
-            template.tintColor = color
-            return template
-
-        case .utilitarianSmall:
-            let template = CLKComplicationTemplateUtilitarianSmallFlat()
-            template.textProvider = CLKSimpleTextProvider(text: timeText)
-            template.tintColor = color
-            return template
-
-        case .circularSmall:
-            let template = CLKComplicationTemplateCircularSmallSimpleText()
-            template.textProvider = CLKSimpleTextProvider(text: available ? "✓" : timeText)
-            template.tintColor = color
-            return template
-
-        case .graphicCircular:
-            let template = CLKComplicationTemplateGraphicCircularStackText()
-            template.line1TextProvider = CLKSimpleTextProvider(text: available ? "Ready" : "Wait")
-            template.line2TextProvider = CLKSimpleTextProvider(text: available ? "✓" : timeText)
-            return template
-
-        case .graphicRectangular:
-            let template = CLKComplicationTemplateGraphicRectangularStandardBody()
-            template.headerTextProvider = CLKSimpleTextProvider(text: "Drink Timer")
-            template.body1TextProvider = CLKSimpleTextProvider(text: available ? "Ready for next drink" : "Wait: \(timeText)")
-            return template
-
-        default:
-            let template = CLKComplicationTemplateModularSmallSimpleText()
-            template.textProvider = CLKSimpleTextProvider(text: timeText)
-            template.tintColor = color
-            return template
         }
     }
 }

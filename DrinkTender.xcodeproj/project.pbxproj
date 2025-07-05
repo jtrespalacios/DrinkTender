@@ -7,10 +7,20 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9630E0B92E187E360082C7B4 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9630E0B82E187E360082C7B4 /* WidgetKit.framework */; };
+		9630E0BB2E187E360082C7B4 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9630E0BA2E187E360082C7B4 /* SwiftUI.framework */; };
+		9630E0C42E187E370082C7B4 /* ComplicationsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9630E0B62E187E360082C7B4 /* ComplicationsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		967211222E10C76000169F94 /* DrinkTender Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 967211212E10C76000169F94 /* DrinkTender Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		9630E0C22E187E370082C7B4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 967211152E10C76000169F94 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9630E0B52E187E360082C7B4;
+			remoteInfo = ComplicationsExtension;
+		};
 		967211232E10C76000169F94 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 967211152E10C76000169F94 /* Project object */;
@@ -21,6 +31,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		9630E0C92E187E370082C7B4 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				9630E0C42E187E370082C7B4 /* ComplicationsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		967211312E10C76100169F94 /* Embed Watch Content */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -35,19 +56,59 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		9630E0B62E187E360082C7B4 /* ComplicationsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ComplicationsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		9630E0B82E187E360082C7B4 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		9630E0BA2E187E360082C7B4 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		9672111B2E10C76000169F94 /* DrinkTender.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DrinkTender.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		967211212E10C76000169F94 /* DrinkTender Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DrinkTender Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		9630E0AD2E187B6B0082C7B4 /* Exceptions for "DrinkTender Watch App" folder in "DrinkTender Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 967211202E10C76000169F94 /* DrinkTender Watch App */;
+		};
+		9630E0C82E187E370082C7B4 /* Exceptions for "Complications" folder in "ComplicationsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 9630E0B52E187E360082C7B4 /* ComplicationsExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		9630E0BC2E187E360082C7B4 /* Complications */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9630E0C82E187E370082C7B4 /* Exceptions for "Complications" folder in "ComplicationsExtension" target */,
+			);
+			path = Complications;
+			sourceTree = "<group>";
+		};
 		967211252E10C76000169F94 /* DrinkTender Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9630E0AD2E187B6B0082C7B4 /* Exceptions for "DrinkTender Watch App" folder in "DrinkTender Watch App" target */,
+			);
 			path = "DrinkTender Watch App";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		9630E0B32E187E360082C7B4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9630E0BB2E187E360082C7B4 /* SwiftUI.framework in Frameworks */,
+				9630E0B92E187E360082C7B4 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9672111E2E10C76000169F94 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -58,10 +119,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		9630E0B72E187E360082C7B4 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				9630E0B82E187E360082C7B4 /* WidgetKit.framework */,
+				9630E0BA2E187E360082C7B4 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		967211142E10C76000169F94 = {
 			isa = PBXGroup;
 			children = (
 				967211252E10C76000169F94 /* DrinkTender Watch App */,
+				9630E0BC2E187E360082C7B4 /* Complications */,
+				9630E0B72E187E360082C7B4 /* Frameworks */,
 				9672111C2E10C76000169F94 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -71,6 +143,7 @@
 			children = (
 				9672111B2E10C76000169F94 /* DrinkTender.app */,
 				967211212E10C76000169F94 /* DrinkTender Watch App.app */,
+				9630E0B62E187E360082C7B4 /* ComplicationsExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -78,6 +151,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		9630E0B52E187E360082C7B4 /* ComplicationsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9630E0C52E187E370082C7B4 /* Build configuration list for PBXNativeTarget "ComplicationsExtension" */;
+			buildPhases = (
+				9630E0B22E187E360082C7B4 /* Sources */,
+				9630E0B32E187E360082C7B4 /* Frameworks */,
+				9630E0B42E187E360082C7B4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				9630E0BC2E187E360082C7B4 /* Complications */,
+			);
+			name = ComplicationsExtension;
+			packageProductDependencies = (
+			);
+			productName = ComplicationsExtension;
+			productReference = 9630E0B62E187E360082C7B4 /* ComplicationsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		9672111A2E10C76000169F94 /* DrinkTender */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 967211322E10C76100169F94 /* Build configuration list for PBXNativeTarget "DrinkTender" */;
@@ -104,10 +199,12 @@
 				9672111D2E10C76000169F94 /* Sources */,
 				9672111E2E10C76000169F94 /* Frameworks */,
 				9672111F2E10C76000169F94 /* Resources */,
+				9630E0C92E187E370082C7B4 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				9630E0C32E187E370082C7B4 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				967211252E10C76000169F94 /* DrinkTender Watch App */,
@@ -129,6 +226,9 @@
 				LastSwiftUpdateCheck = 1640;
 				LastUpgradeCheck = 1640;
 				TargetAttributes = {
+					9630E0B52E187E360082C7B4 = {
+						CreatedOnToolsVersion = 16.4;
+					};
 					9672111A2E10C76000169F94 = {
 						CreatedOnToolsVersion = 16.4;
 					};
@@ -153,11 +253,19 @@
 			targets = (
 				9672111A2E10C76000169F94 /* DrinkTender */,
 				967211202E10C76000169F94 /* DrinkTender Watch App */,
+				9630E0B52E187E360082C7B4 /* ComplicationsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		9630E0B42E187E360082C7B4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		967211192E10C76000169F94 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -175,6 +283,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		9630E0B22E187E360082C7B4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9672111D2E10C76000169F94 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -185,6 +300,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		9630E0C32E187E370082C7B4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9630E0B52E187E360082C7B4 /* ComplicationsExtension */;
+			targetProxy = 9630E0C22E187E370082C7B4 /* PBXContainerItemProxy */;
+		};
 		967211242E10C76000169F94 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 967211202E10C76000169F94 /* DrinkTender Watch App */;
@@ -193,6 +313,67 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		9630E0C62E187E370082C7B4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 485769N5A5;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Complications/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Complications;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = co.j3p.DrinkTender.watchkitapp.Complications;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Debug;
+		};
+		9630E0C72E187E370082C7B4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 485769N5A5;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Complications/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Complications;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = co.j3p.DrinkTender.watchkitapp.Complications;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Release;
+		};
 		9672112C2E10C76100169F94 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -318,7 +499,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 485769N5A5;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "DrinkTender Watch App/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = DrinkTender;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKWatchOnly = YES;
@@ -347,7 +529,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 485769N5A5;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "DrinkTender Watch App/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = DrinkTender;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKWatchOnly = YES;
@@ -402,6 +585,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		9630E0C52E187E370082C7B4 /* Build configuration list for PBXNativeTarget "ComplicationsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9630E0C62E187E370082C7B4 /* Debug */,
+				9630E0C72E187E370082C7B4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		967211182E10C76000169F94 /* Build configuration list for PBXProject "DrinkTender" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
