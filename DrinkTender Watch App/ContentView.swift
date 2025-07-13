@@ -34,7 +34,11 @@ class DrinkTimerModel: ObservableObject {
         lastDrinkTime = Date()
         canDrink = false
         drinkCount += 1
-        saveData()
+        
+        // Save data immediately and force sync
+        saveDataWithSync()
+        
+        // Force immediate widget update
         scheduleComplicationUpdate()
         
         // Schedule notification for when next drink is available
@@ -42,7 +46,7 @@ class DrinkTimerModel: ObservableObject {
             scheduleNotification()
         }
 
-        // Schedule next drink availability
+        // Schedule next drink availability check
         DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(delayMinutes * 60)) {
             self.updateCanDrinkStatus()
         }
@@ -50,18 +54,24 @@ class DrinkTimerModel: ObservableObject {
     
     func resetDrinkCount() {
         drinkCount = 0
-        saveData()
+        saveDataWithSync()
+        scheduleComplicationUpdate()
     }
 
     func updateCanDrinkStatus() {
         guard let lastDrink = lastDrinkTime else {
             canDrink = true
+            scheduleComplicationUpdate()
             return
         }
 
         let timeSinceLastDrink = Date().timeIntervalSince(lastDrink)
-        canDrink = timeSinceLastDrink >= TimeInterval(delayMinutes * 60)
-        scheduleComplicationUpdate()
+        let newCanDrink = timeSinceLastDrink >= TimeInterval(delayMinutes * 60)
+        
+        if newCanDrink != canDrink {
+            canDrink = newCanDrink
+            scheduleComplicationUpdate()
+        }
     }
 
     func timeUntilNextDrink() -> TimeInterval {
@@ -97,6 +107,20 @@ class DrinkTimerModel: ObservableObject {
         userDefaults.set(notificationsEnabled, forKey: notificationsKey)
         userDefaults.set(drinkCount, forKey: drinkCountKey)
     }
+    
+    private func saveDataWithSync() {
+        saveData()
+        
+        // Force synchronization to ensure widgets get updated data immediately
+        DispatchQueue.global(qos: .userInitiated).async {
+            self.userDefaults.synchronize()
+            
+            // Update widgets after a brief delay to ensure data is saved
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.scheduleComplicationUpdate()
+            }
+        }
+    }
 
     private func loadData() {
         if let savedDate = userDefaults.object(forKey: lastDrinkKey) as? Date {
@@ -115,7 +139,13 @@ class DrinkTimerModel: ObservableObject {
     }
 
     private func scheduleComplicationUpdate() {
+        // Reload all widget timelines immediately
         WidgetCenter.shared.reloadAllTimelines()
+        
+        // Also reload specific widget kinds for more targeted updates
+        WidgetCenter.shared.reloadTimelines(ofKind: "DrinkTimerWidget")
+        WidgetCenter.shared.reloadTimelines(ofKind: "DrinkTimerRectangularWidget")
+        WidgetCenter.shared.reloadTimelines(ofKind: "DrinkTimerLargeWidget")
     }
     
     // MARK: - Notification Methods
@@ -169,7 +199,7 @@ class DrinkTimerModel: ObservableObject {
             // Request permission and enable
             requestNotificationPermission()
         }
-        saveData()
+        saveDataWithSync()
     }
 }
 
@@ -196,6 +226,13 @@ struct ContentView: View {
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
         }
         .onAppear {
+            drinkTimer.updateCanDrinkStatus()
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: .NSExtensionHostWillEnterForeground)
+        ) { _ in
+            // Update status when app becomes active
             drinkTimer.updateCanDrinkStatus()
         }
     }
@@ -294,7 +331,7 @@ struct ContentView: View {
                                 .foregroundColor(.white)
                             Spacer()
                             Toggle("", isOn: $drinkTimer.notificationsEnabled)
-                                .onChange(of: drinkTimer.notificationsEnabled) { _ in
+                                .onChange(of: drinkTimer.notificationsEnabled) { (_, _) in
                                     drinkTimer.toggleNotifications()
                                 }
                         }
@@ -315,6 +352,7 @@ struct ContentView: View {
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 drinkTimer.delayMinutes = minutes
+                                drinkTimer.updateCanDrinkStatus()
                             }
                         }
                     }
@@ -356,6 +394,8 @@ struct ContentView: View {
                             drinkTimer.canDrink = true
                             // Cancel any pending notifications
                             UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["DrinkTimerNotification"])
+                            // Force widget update
+                            WidgetCenter.shared.reloadAllTimelines()
                         }
                         .foregroundColor(.red)
                         

@@ -14,7 +14,6 @@ struct DrinkTimerEntry: TimelineEntry {
     let canDrink: Bool
     let timeUntilNext: String
     let drinkCount: Int
-    let progressPercentage: Double // New property for border progress
 }
 
 // MARK: - Timeline Provider
@@ -25,8 +24,7 @@ struct DrinkTimerProvider: TimelineProvider {
             date: Date(),
             canDrink: false,
             timeUntilNext: "25m",
-            drinkCount: 3,
-            progressPercentage: 0.6
+            drinkCount: 3
         )
     }
 
@@ -39,26 +37,58 @@ struct DrinkTimerProvider: TimelineProvider {
         let currentEntry = createEntry()
         var entries: [DrinkTimerEntry] = [currentEntry]
 
-        // If there's a timer running, create an entry for when it completes
-        if !currentEntry.canDrink {
-            let drinkData = getDrinkTimerData()
-            if let lastDrink = drinkData.lastDrinkTime {
-                let nextAvailableTime = lastDrink.addingTimeInterval(TimeInterval(drinkData.delayMinutes * 60))
-                if nextAvailableTime > Date() {
-                    let readyEntry = DrinkTimerEntry(
-                        date: nextAvailableTime,
-                        canDrink: true,
-                        timeUntilNext: "Ready!",
-                        drinkCount: drinkData.drinkCount,
-                        progressPercentage: 1.0
-                    )
-                    entries.append(readyEntry)
+        // Create multiple timeline entries for smooth updates
+        let drinkData = getDrinkTimerData()
+
+        if !currentEntry.canDrink, let lastDrink = drinkData.lastDrinkTime {
+            let nextAvailableTime = lastDrink.addingTimeInterval(TimeInterval(drinkData.delayMinutes * 60))
+            let now = Date()
+
+            if nextAvailableTime > now {
+                // Create entries every minute until the timer completes
+                let timeRemaining = nextAvailableTime.timeIntervalSinceNow
+                let minutesToComplete = Int(ceil(timeRemaining / 60))
+
+                // Limit to reasonable number of entries (max 60 for performance)
+                let maxEntries = min(minutesToComplete, 60)
+
+                for minute in 1...maxEntries {
+                    let entryDate = now.addingTimeInterval(TimeInterval(minute * 60))
+                    if entryDate <= nextAvailableTime {
+                        let remainingTime = nextAvailableTime.timeIntervalSince(entryDate)
+                        let formattedTime = formatTimeRemaining(remainingTime)
+
+                        let entry = DrinkTimerEntry(
+                            date: entryDate,
+                            canDrink: false,
+                            timeUntilNext: formattedTime,
+                            drinkCount: drinkData.drinkCount
+                        )
+                        entries.append(entry)
+                    }
                 }
+
+                // Final entry when timer completes
+                let readyEntry = DrinkTimerEntry(
+                    date: nextAvailableTime,
+                    canDrink: true,
+                    timeUntilNext: "Ready!",
+                    drinkCount: drinkData.drinkCount
+                )
+                entries.append(readyEntry)
             }
         }
 
-        // Update timeline every minute to keep progress accurate
-        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 1, to: Date()) ?? Date()
+        // Update timeline more frequently when timer is active
+        let nextUpdate: Date
+        if currentEntry.canDrink {
+            // When ready, update less frequently
+            nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date()
+        } else {
+            // When timer is running, update every minute
+            nextUpdate = Calendar.current.date(byAdding: .minute, value: 1, to: Date()) ?? Date()
+        }
+
         let timeline = Timeline(entries: entries, policy: .after(nextUpdate))
         completion(timeline)
     }
@@ -69,13 +99,28 @@ struct DrinkTimerProvider: TimelineProvider {
             date: Date(),
             canDrink: drinkData.canDrink,
             timeUntilNext: drinkData.formattedTimeUntilNext(),
-            drinkCount: drinkData.drinkCount,
-            progressPercentage: drinkData.progressPercentage()
+            drinkCount: drinkData.drinkCount
         )
     }
 
-    private func getDrinkTimerData() -> (lastDrinkTime: Date?, delayMinutes: Int, canDrink: Bool, drinkCount: Int, formattedTimeUntilNext: () -> String, progressPercentage: () -> Double) {
-        let userDefaults = UserDefaults.standard
+    private func formatTimeRemaining(_ timeInterval: TimeInterval) -> String {
+        if timeInterval <= 0 {
+            return "Ready!"
+        }
+
+        let hours = Int(timeInterval) / 3600
+        let minutes = Int(timeInterval.truncatingRemainder(dividingBy: 3600)) / 60
+
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else {
+            return "\(minutes)m"
+        }
+    }
+
+    private func getDrinkTimerData() -> (lastDrinkTime: Date?, delayMinutes: Int, canDrink: Bool, drinkCount: Int, formattedTimeUntilNext: () -> String) {
+        let suiteName = "group.co.j3p.DrinkTender"
+        let userDefaults = UserDefaults(suiteName: suiteName)!
         let lastDrinkTime = userDefaults.object(forKey: "lastDrinkTime") as? Date
         let delayMinutes = userDefaults.integer(forKey: "delayMinutes")
         let finalDelayMinutes = delayMinutes == 0 ? 60 : delayMinutes
@@ -96,35 +141,10 @@ struct DrinkTimerProvider: TimelineProvider {
             let nextDrinkTime = lastDrink.addingTimeInterval(delayInterval)
             let timeRemaining = max(0, nextDrinkTime.timeIntervalSinceNow)
 
-            if timeRemaining <= 0 {
-                return "Ready!"
-            }
-
-            let hours = Int(timeRemaining) / 3600
-            let minutes = Int(timeRemaining.truncatingRemainder(dividingBy: 3600)) / 60
-
-            if hours > 0 {
-                return "\(hours)h \(minutes)m"
-            } else {
-                return "\(minutes)m"
-            }
+            return self.formatTimeRemaining(timeRemaining)
         }
 
-        let progressPercentage = {
-            guard let lastDrink = lastDrinkTime else { return 1.0 }
-
-            if canDrink {
-                return 1.0 // Complete when ready
-            }
-
-            let totalDelayTime = TimeInterval(finalDelayMinutes * 60)
-            let timeSinceLastDrink = Date().timeIntervalSince(lastDrink)
-            let progress = timeSinceLastDrink / totalDelayTime
-
-            return min(max(progress, 0.0), 1.0)
-        }
-
-        return (lastDrinkTime, finalDelayMinutes, canDrink, drinkCount, formattedTimeUntilNext, progressPercentage)
+        return (lastDrinkTime, finalDelayMinutes, canDrink, drinkCount, formattedTimeUntilNext)
     }
 }
 
@@ -133,38 +153,29 @@ struct DrinkTimerWidgetView: View {
     let entry: DrinkTimerEntry
 
     var body: some View {
-        ZStack {
-            // Background circle with color based on state
-            Circle()
-                .fill(backgroundColor)
-                .frame(width: 40, height: 40)
 
-            // Progress border
-            Circle()
-                .trim(from: 0, to: entry.progressPercentage)
-                .stroke(
-                    borderColor,
-                    style: StrokeStyle(lineWidth: 3, lineCap: .round)
-                )
-                .frame(width: 40, height: 40)
-                .rotationEffect(.degrees(-90))
-
-            // Drink count in center
-            Text("\(entry.drinkCount)")
-                .font(.system(size: 16, weight: .bold, design: .rounded))
+        VStack(spacing: 2) {
+            // Status Icon
+            Image(systemName: entry.canDrink ? "checkmark.circle.fill" : "clock.fill")
+                .font(.title2)
                 .foregroundColor(.white)
+
+            // Time or Status Text
+            Text(entry.canDrink ? "Ready" : entry.timeUntilNext)
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
         }
         .containerBackground(for: .widget) {
-            Color.clear
+            ContainerRelativeShape()
+                .fill(backgroundColor.gradient)
         }
     }
 
     private var backgroundColor: Color {
-        entry.canDrink ? .green : .purple
-    }
-
-    private var borderColor: Color {
-        entry.canDrink ? .white : .white.opacity(0.8)
+        entry.canDrink ? .green : .orange
     }
 }
 
@@ -173,39 +184,36 @@ struct DrinkTimerRectangularView: View {
     let entry: DrinkTimerEntry
 
     var body: some View {
-        HStack(spacing: 8) {
-            // Timer circle with progress border
-            ZStack {
-                Circle()
-                    .fill(backgroundColor)
-                    .frame(width: 24, height: 24)
-
-                Circle()
-                    .trim(from: 0, to: entry.progressPercentage)
-                    .stroke(
-                        Color.white.opacity(0.8),
-                        style: StrokeStyle(lineWidth: 2, lineCap: .round)
-                    )
-                    .frame(width: 24, height: 24)
-                    .rotationEffect(.degrees(-90))
-
-                Text("\(entry.drinkCount)")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.white)
-            }
-
+        HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Drink Timer")
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
 
-                Text(entry.canDrink ? "Ready for next drink" : "Wait: \(entry.timeUntilNext)")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                HStack(spacing: 4) {
+                    Image(systemName: entry.canDrink ? "checkmark.circle.fill" : "clock.fill")
+                        .font(.caption)
+                        .foregroundColor(entry.canDrink ? .green : .orange)
+
+                    Text(entry.canDrink ? "Ready for next drink" : "Wait: \(entry.timeUntilNext)")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
             }
 
             Spacer()
+
+            // Drink count
+            VStack {
+                Text("\(entry.drinkCount)")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                Text("drinks")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
@@ -213,10 +221,6 @@ struct DrinkTimerRectangularView: View {
             ContainerRelativeShape()
                 .fill(.windowBackground)
         }
-    }
-
-    private var backgroundColor: Color {
-        entry.canDrink ? .green : .purple
     }
 }
 
@@ -226,39 +230,30 @@ struct DrinkTimerLargeView: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            // Main Status Circle with progress border
+            // Main Status Circle
             ZStack {
                 Circle()
-                    .fill(backgroundColor)
+                    .stroke(Color.gray.opacity(0.3), lineWidth: 4)
                     .frame(width: 60, height: 60)
 
                 Circle()
-                    .trim(from: 0, to: entry.progressPercentage)
-                    .stroke(
-                        Color.white.opacity(0.9),
-                        style: StrokeStyle(lineWidth: 4, lineCap: .round)
-                    )
-                    .frame(width: 60, height: 60)
-                    .rotationEffect(.degrees(-90))
+                    .fill(entry.canDrink ? Color.green : Color.orange)
+                    .frame(width: 50, height: 50)
 
-                VStack(spacing: 2) {
+                HStack {
                     Text("\(entry.drinkCount)")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    Image(systemName: entry.canDrink ? "checkmark" : "clock")
                         .foregroundColor(.white)
                 }
+                .font(.caption2)
             }
-
         }
         .padding()
         .containerBackground(for: .widget) {
             ContainerRelativeShape()
                 .fill(.windowBackground)
         }
-    }
-
-    private var backgroundColor: Color {
-        entry.canDrink ? .green : .purple
     }
 }
 
@@ -339,19 +334,17 @@ struct DrinkTimerWidgetBundle: WidgetBundle {
                     date: Date(),
                     canDrink: true,
                     timeUntilNext: "Ready!",
-                    drinkCount: 3,
-                    progressPercentage: 1.0
+                    drinkCount: 3
                 ))
                 .previewContext(WidgetPreviewContext(family: .accessoryCircular))
                 .previewDisplayName("Circular - Ready")
 
-                // Circular - Waiting State (60% progress)
+                // Circular - Waiting State
                 DrinkTimerWidgetView(entry: DrinkTimerEntry(
                     date: Date(),
                     canDrink: false,
                     timeUntilNext: "25m",
-                    drinkCount: 3,
-                    progressPercentage: 0.6
+                    drinkCount: 3
                 ))
                 .previewContext(WidgetPreviewContext(family: .accessoryCircular))
                 .previewDisplayName("Circular - Waiting")
@@ -361,8 +354,7 @@ struct DrinkTimerWidgetBundle: WidgetBundle {
                     date: Date(),
                     canDrink: false,
                     timeUntilNext: "25m",
-                    drinkCount: 5,
-                    progressPercentage: 0.4
+                    drinkCount: 5
                 ))
                 .previewContext(WidgetPreviewContext(family: .accessoryRectangular))
                 .previewDisplayName("Rectangular")
@@ -372,8 +364,7 @@ struct DrinkTimerWidgetBundle: WidgetBundle {
                     date: Date(),
                     canDrink: true,
                     timeUntilNext: "Ready!",
-                    drinkCount: 4,
-                    progressPercentage: 1.0
+                    drinkCount: 4
                 ))
                 .previewContext(WidgetPreviewContext(family: .accessoryRectangular))
                 .previewDisplayName("Large")
